@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>批量价格计算工具</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            overflow: hidden;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            padding: 25px;
+            height: calc(100vh - 40px);
+            display: flex;
+            flex-direction: column;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 24px;
+        }
+
+        .main-content {
+            display: flex;
+            gap: 25px;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .left-panel {
+            flex: 1;
+            overflow-y: auto;
+            padding-right: 15px;
+        }
+
+        .right-panel {
+            flex: 1;
+            overflow-y: auto;
+            padding-left: 15px;
+            border-left: 2px solid #f0f0f0;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 500;
+        }
+
+        input[type="number"],
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        input[type="number"]:focus,
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        .quantity-section {
+            margin-top: 20px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 2px solid #667eea;
+        }
+
+        .quantity-section > label {
+            font-size: 18px;
+            font-weight: 600;
+            color: #667eea;
+            margin-bottom: 15px;
+            display: block;
+        }
+
+        .quantity-item {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+
+        .quantity-item input {
+            flex: 1;
+        }
+
+        .remove-btn {
+            padding: 8px 16px;
+            background: #ff4757;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: background 0.3s, opacity 0.3s;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .remove-btn:hover:not(:disabled) {
+            background: #ff3838;
+        }
+
+        .remove-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            background: #ccc;
+        }
+
+        .add-quantity-btn {
+            padding: 10px 20px;
+            background: #2ed573;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: background 0.3s, transform 0.1s;
+            margin-top: 10px;
+            width: 100%;
+        }
+
+        .add-quantity-btn:hover {
+            background: #26d467;
+            transform: translateY(-1px);
+        }
+
+        .add-quantity-btn:active {
+            transform: translateY(0);
+        }
+
+        .calculate-btn {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .calculate-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .calculate-btn:active {
+            transform: translateY(0);
+        }
+
+        .results {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .results h2 {
+            margin-bottom: 15px;
+            color: #333;
+            font-size: 20px;
+        }
+
+        #result-list {
+            flex: 1;
+            overflow-y: auto;
+            margin-bottom: 15px;
+        }
+
+        .result-item {
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .result-label {
+            color: #666;
+            font-weight: 500;
+        }
+
+        .result-value {
+            color: #333;
+            font-size: 16px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .copy-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 4px 10px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: background 0.3s, transform 0.1s;
+            font-weight: 500;
+        }
+
+        .copy-btn:hover {
+            background: #5568d3;
+        }
+
+        .copy-btn:active {
+            transform: scale(0.95);
+        }
+
+        .copy-btn.copied {
+            background: #28a745;
+        }
+
+        .total-result .result-value {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 8px;
+        }
+
+        .total-result .copy-btn {
+            background: rgba(255, 255, 255, 0.3);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+
+        .total-result .copy-btn:hover {
+            background: rgba(255, 255, 255, 0.4);
+        }
+
+        .total-result .copy-btn.copied {
+            background: rgba(40, 167, 69, 0.8);
+        }
+
+        .total-result {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 6px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+
+        .total-result .result-label {
+            color: white;
+            font-size: 16px;
+        }
+
+        .total-result .result-value {
+            color: white;
+            font-size: 24px;
+            margin-top: 8px;
+        }
+
+        .formula-display {
+            background: #f0f4ff;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            color: #555;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
+        .disabled {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        /* 自定义滚动条样式 */
+        .left-panel::-webkit-scrollbar,
+        .right-panel::-webkit-scrollbar,
+        #result-list::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .left-panel::-webkit-scrollbar-track,
+        .right-panel::-webkit-scrollbar-track,
+        #result-list::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+
+        .left-panel::-webkit-scrollbar-thumb,
+        .right-panel::-webkit-scrollbar-thumb,
+        #result-list::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 4px;
+        }
+
+        .left-panel::-webkit-scrollbar-thumb:hover,
+        .right-panel::-webkit-scrollbar-thumb:hover,
+        #result-list::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+
+        /* 折叠面板样式 */
+        .collapse-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 15px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-bottom: 15px;
+            user-select: none;
+            transition: background 0.3s;
+        }
+
+        .collapse-header:hover {
+            background: #e9ecef;
+        }
+
+        .collapse-header h3 {
+            margin: 0;
+            color: #333;
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .collapse-icon {
+            font-size: 18px;
+            color: #667eea;
+            transition: transform 0.3s;
+        }
+
+        .collapse-icon.collapsed {
+            transform: rotate(-90deg);
+        }
+
+        .collapse-content {
+            overflow: hidden;
+            transition: max-height 0.4s ease-out, opacity 0.3s ease-out, margin-bottom 0.3s ease-out;
+            max-height: 2000px;
+            opacity: 1;
+            margin-bottom: 0;
+        }
+
+        .collapse-content.collapsed {
+            max-height: 0;
+            opacity: 0;
+            margin-bottom: 0;
+        }
+
+        /* 运费预览样式 */
+        .shipping-preview {
+            background: #e7f3ff;
+            border: 2px solid #667eea;
+            border-radius: 6px;
+            padding: 12px;
+            margin-top: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .shipping-preview-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .shipping-preview-label {
+            color: #555;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .shipping-preview-value {
+            color: #667eea;
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .shipping-preview-item.discounted .shipping-preview-label {
+            color: #28a745;
+        }
+
+        .shipping-preview-item.discounted .shipping-preview-value {
+            color: #28a745;
+            font-size: 18px;
+        }
+
+        .shipping-preview.hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>批量价格计算工具</h1>
+
+        <div class="main-content">
+            <div class="left-panel">
+                <div class="price-settings-section">
+                    <div class="collapse-header" onclick="togglePriceSettings()">
+                        <h3>价格设置</h3>
+                        <span class="collapse-icon" id="price-settings-icon">▼</span>
+                    </div>
+                    <div class="collapse-content collapsed" id="price-settings-content">
+                        <div class="formula-display">
+                            <strong>计算公式：</strong><br>
+                            单价 = 批发价 × (加价百分比/100) + 额外加价<br>
+                            运费 = 运费金额 × (运费百分比/100) [可选]<br>
+                            总价 = (单价 × 数量 + 运费) × 折扣
+                        </div>
+
+                        <div class="form-group">
+                            <label for="wholesale-price">批发价（元）</label>
+                            <input type="number" id="wholesale-price" step="0.01" placeholder="例如：10" value="10">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="markup-percent">加价百分比（%）</label>
+                            <input type="number" id="markup-percent" step="0.01" placeholder="例如：180" value="180">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="extra-amount">额外加价（元）</label>
+                            <input type="number" id="extra-amount" step="0.01" placeholder="例如：3" value="3">
+                        </div>
+
+                        <div class="form-group">
+                            <div class="checkbox-group">
+                                <input type="checkbox" id="enable-shipping" checked>
+                                <label for="enable-shipping" style="margin-bottom: 0;">启用运费</label>
+                            </div>
+                        </div>
+
+                        <div class="form-group" id="shipping-group">
+                            <label for="shipping-amount">运费金额（元）</label>
+                            <input type="number" id="shipping-amount" step="0.01" placeholder="例如：8" value="8">
+                        </div>
+
+                        <div class="form-group" id="shipping-percent-group">
+                            <label for="shipping-percent">运费百分比（%）</label>
+                            <input type="number" id="shipping-percent" step="0.01" placeholder="例如：130" value="130">
+                            <div class="shipping-preview" id="shipping-preview">
+                                <div class="shipping-preview-item">
+                                    <span class="shipping-preview-label">实际运费：</span>
+                                    <span class="shipping-preview-value" id="shipping-preview-value">¥0.00</span>
+                                </div>
+                                <div class="shipping-preview-item discounted">
+                                    <span class="shipping-preview-label">折后运费：</span>
+                                    <span class="shipping-preview-value" id="shipping-discounted-value">¥0.00</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="discount">折扣（例如：0.77 表示 77 折）</label>
+                            <input type="number" id="discount" step="0.01" min="0" max="1" placeholder="例如：0.77" value="1">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="price-offset">价格偏移（元）</label>
+                            <input type="number" id="price-offset" step="0.01" placeholder="例如：0.01（1分）、-0.01（减1分）、0.5（5毛）、1（1元）" value="0">
+                            <div style="margin-top: 5px; font-size: 12px; color: #666;">
+                                用于错开相似品价格，会在折扣之前加上此金额（可为正数或负数）
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="quantity-section">
+                    <label>数量列表</label>
+                    <div id="quantity-list">
+                        <div class="quantity-item">
+                            <input type="number" class="quantity-input" step="1" min="1" placeholder="输入数量" value="1">
+                            <button class="remove-btn" onclick="removeQuantity(this)" disabled>删除</button>
+                        </div>
+                    </div>
+                    <button class="add-quantity-btn" onclick="addQuantity()">+ 追加数量</button>
+                </div>
+
+                <button class="calculate-btn" onclick="calculate()">计算</button>
+            </div>
+
+            <div class="right-panel">
+                <div class="results" id="results">
+                    <h2>计算结果</h2>
+                    <div id="result-list">
+                        <div style="text-align: center; color: #999; padding: 40px 0;">
+                            点击左侧"计算"按钮查看结果
+                        </div>
+                    </div>
+                    <div class="total-result">
+                        <div class="result-label">总计</div>
+                        <div class="result-value" id="total-price">
+                            <span id="total-price-value">¥0.00</span>
+                            <button class="copy-btn" onclick="copyPrice('total-price-value', this)" title="复制价格">复制</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 折叠/展开价格设置
+        function togglePriceSettings() {
+            const content = document.getElementById('price-settings-content');
+            const icon = document.getElementById('price-settings-icon');
+            
+            content.classList.toggle('collapsed');
+            icon.classList.toggle('collapsed');
+        }
+
+        // 复制价格（只复制数字）
+        function copyPrice(elementId, button) {
+            const priceElement = document.getElementById(elementId);
+            if (!priceElement) return;
+            
+            // 获取价格文本，去掉¥符号和空格，只保留数字
+            const priceText = priceElement.textContent.trim();
+            const priceNumber = priceText.replace(/[¥\s]/g, '');
+            
+            // 复制到剪贴板
+            navigator.clipboard.writeText(priceNumber).then(() => {
+                // 显示复制成功反馈
+                const originalText = button.textContent;
+                button.textContent = '已复制';
+                button.classList.add('copied');
+                
+                // 1秒后恢复原状
+                setTimeout(() => {
+                    button.textContent = originalText;
+                    button.classList.remove('copied');
+                }, 1000);
+            }).catch(err => {
+                // 如果clipboard API失败，使用传统方法
+                const textArea = document.createElement('textarea');
+                textArea.value = priceNumber;
+                textArea.style.position = 'fixed';
+                textArea.style.opacity = '0';
+                document.body.appendChild(textArea);
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    const originalText = button.textContent;
+                    button.textContent = '已复制';
+                    button.classList.add('copied');
+                    setTimeout(() => {
+                        button.textContent = originalText;
+                        button.classList.remove('copied');
+                    }, 1000);
+                } catch (err) {
+                    alert('复制失败，请手动复制');
+                }
+                document.body.removeChild(textArea);
+            });
+        }
+
+        // 更新运费预览
+        function updateShippingPreview() {
+            const enableShipping = document.getElementById('enable-shipping').checked;
+            const shippingPreview = document.getElementById('shipping-preview');
+            const shippingPreviewValue = document.getElementById('shipping-preview-value');
+            const shippingDiscountedValue = document.getElementById('shipping-discounted-value');
+            
+            if (enableShipping) {
+                const shippingAmount = parseFloat(document.getElementById('shipping-amount').value) || 0;
+                const shippingPercent = parseFloat(document.getElementById('shipping-percent').value) || 0;
+                const discount = parseFloat(document.getElementById('discount').value) || 1;
+                
+                // 计算实际运费
+                const actualShipping = shippingAmount * (shippingPercent / 100);
+                shippingPreviewValue.textContent = `¥${actualShipping.toFixed(2)}`;
+                
+                // 计算折后运费
+                const discountedShipping = actualShipping * discount;
+                shippingDiscountedValue.textContent = `¥${discountedShipping.toFixed(2)}`;
+                
+                shippingPreview.classList.remove('hidden');
+            } else {
+                shippingPreview.classList.add('hidden');
+            }
+        }
+
+        // 运费启用/禁用切换
+        document.getElementById('enable-shipping').addEventListener('change', function() {
+            const shippingGroup = document.getElementById('shipping-group');
+            const shippingPercentGroup = document.getElementById('shipping-percent-group');
+            
+            if (this.checked) {
+                shippingGroup.classList.remove('disabled');
+                shippingPercentGroup.classList.remove('disabled');
+                document.getElementById('shipping-amount').disabled = false;
+                document.getElementById('shipping-percent').disabled = false;
+            } else {
+                shippingGroup.classList.add('disabled');
+                shippingPercentGroup.classList.add('disabled');
+                document.getElementById('shipping-amount').disabled = true;
+                document.getElementById('shipping-percent').disabled = true;
+            }
+            updateShippingPreview();
+        });
+
+        // 运费金额、百分比和折扣输入时实时更新预览
+        document.getElementById('shipping-amount').addEventListener('input', updateShippingPreview);
+        document.getElementById('shipping-percent').addEventListener('input', updateShippingPreview);
+        document.getElementById('discount').addEventListener('input', updateShippingPreview);
+
+        // 添加数量输入框
+        function addQuantity() {
+            const quantityList = document.getElementById('quantity-list');
+            const quantityItem = document.createElement('div');
+            quantityItem.className = 'quantity-item';
+            quantityItem.innerHTML = `
+                <input type="number" class="quantity-input" step="1" min="1" placeholder="输入数量" value="1">
+                <button class="remove-btn" onclick="removeQuantity(this)">删除</button>
+            `;
+            quantityList.appendChild(quantityItem);
+            updateRemoveButtons();
+        }
+
+        // 删除数量输入框
+        function removeQuantity(btn) {
+            const quantityList = document.getElementById('quantity-list');
+            if (quantityList.children.length > 1) {
+                btn.parentElement.remove();
+                updateRemoveButtons();
+            }
+        }
+
+        // 更新删除按钮状态
+        function updateRemoveButtons() {
+            const quantityItems = document.querySelectorAll('.quantity-item');
+            quantityItems.forEach((item, index) => {
+                const removeBtn = item.querySelector('.remove-btn');
+                // 如果只有一个数量项，禁用删除按钮；否则启用
+                if (quantityItems.length <= 1) {
+                    removeBtn.disabled = true;
+                } else {
+                    removeBtn.disabled = false;
+                }
+            });
+        }
+
+        // 计算价格
+        function calculate() {
+            // 获取输入值
+            const wholesalePrice = parseFloat(document.getElementById('wholesale-price').value) || 0;
+            const markupPercent = parseFloat(document.getElementById('markup-percent').value) || 0;
+            const extraAmount = parseFloat(document.getElementById('extra-amount').value) || 0;
+            const enableShipping = document.getElementById('enable-shipping').checked;
+            const shippingAmount = enableShipping ? (parseFloat(document.getElementById('shipping-amount').value) || 0) : 0;
+            const shippingPercent = enableShipping ? (parseFloat(document.getElementById('shipping-percent').value) || 0) : 0;
+            const discount = parseFloat(document.getElementById('discount').value) || 1;
+            const priceOffset = parseFloat(document.getElementById('price-offset').value) || 0;
+
+            // 获取所有数量
+            const quantityInputs = document.querySelectorAll('.quantity-input');
+            const quantities = Array.from(quantityInputs).map(input => parseInt(input.value) || 0).filter(q => q > 0);
+
+            if (quantities.length === 0) {
+                alert('请至少输入一个数量！');
+                return;
+            }
+
+            // 计算单价
+            const unitPrice = wholesalePrice * (markupPercent / 100) + extraAmount;
+
+            // 计算运费
+            const shippingCost = enableShipping ? shippingAmount * (shippingPercent / 100) : 0;
+
+            // 显示结果
+            const resultsDiv = document.getElementById('results');
+            const resultList = document.getElementById('result-list');
+            resultList.innerHTML = '';
+
+            let totalPrice = 0;
+
+            quantities.forEach((quantity, index) => {
+                // 计算单个数量的总价
+                // 顺序：单价 × 数量 + 运费 + 价格偏移，然后 × 折扣
+                const priceBeforeOffset = unitPrice * quantity + shippingCost;
+                const priceAfterOffset = priceBeforeOffset + priceOffset;
+                const finalPrice = priceAfterOffset * discount;
+                totalPrice += finalPrice;
+
+                // 创建结果项
+                const resultItem = document.createElement('div');
+                resultItem.className = 'result-item';
+                const priceId = `price-${index}`;
+                let offsetText = '';
+                if (priceOffset !== 0) {
+                    const offsetSign = priceOffset > 0 ? '+' : '';
+                    offsetText = ` ${offsetSign}偏移 ¥${priceOffset.toFixed(2)}`;
+                }
+                resultItem.innerHTML = `
+                    <div class="result-label">
+                        数量 ${quantity} 件：单价 ¥${unitPrice.toFixed(2)} × ${quantity} 
+                        ${enableShipping ? `+ 运费 ¥${shippingCost.toFixed(2)}` : ''}${offsetText}
+                        × ${(discount * 100).toFixed(0)}折
+                    </div>
+                    <div class="result-value">
+                        <span id="${priceId}">¥${finalPrice.toFixed(2)}</span>
+                        <button class="copy-btn" onclick="copyPrice('${priceId}', this)" title="复制价格">复制</button>
+                    </div>
+                `;
+                resultList.appendChild(resultItem);
+            });
+
+            // 显示总计
+            document.getElementById('total-price-value').textContent = `¥${totalPrice.toFixed(2)}`;
+            
+            // 如果结果列表为空，显示提示信息
+            if (resultList.children.length === 0) {
+                resultList.innerHTML = '<div style="text-align: center; color: #999; padding: 40px 0;">点击左侧"计算"按钮查看结果</div>';
+            }
+        }
+
+        // 初始化：更新删除按钮状态和运费预览
+        updateRemoveButtons();
+        updateShippingPreview();
+    </script>
+</body>
+</html>
